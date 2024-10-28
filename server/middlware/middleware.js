@@ -1,35 +1,33 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import jwt from 'jsonwebtoken'
+import User from '../models/User.js'
 
 const middleware = async (req, res, next) => {
     try {
-        // Check if Authorization header exists
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, message: "Unauthorized, no token provided" });
-        }
+        const token = req.headers.authorization.split(' ')[1]
 
-        const token = authHeader.split(' ')[1]; // Extract token
-        const decoded = jwt.verify(token, "secretkeyofnoteapp123"); // Verify token using the secret key
+        if (!token) {
+            return res.status(401).json({ success: false, message: "Unauthorized" })
+        }
+        const decoded = jwt.verify(token, "secretkeyofnoteapp123");
 
         if (!decoded) {
-            return res.status(401).json({ success: false, message: "Invalid token" });
+            return res.status(401).json({ success: false, message: "wrong token" })
+
         }
 
-        // Fetch the user by ID from the decoded token
-        const user = await User.findById(decoded.id);
+        const user = await User.findById({ _id: decoded.id })
+
         if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
+            return res.status(404).json({ success: false, message: "no user" })
+
         }
-
-        // Attach user to the request object
-        req.user = { name: user.name, id: user._id };
-
-        next();
+        const newUser = { name: user.name,id:user._id }
+        req.user = newUser
+        next()
     } catch (error) {
-        console.error("Middleware error: ", error.message);
-        return res.status(500).json({ success: false, message: "Server error, please login again" });
-    }
-};
+        return res.status(500).json({success:false,message:"please login"})
 
-export default middleware;
+    }
+}
+
+export default middleware
